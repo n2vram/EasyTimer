@@ -1,10 +1,31 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python2
 import sys
 from PyQt4 import QtGui, QtCore
-from ui.timerUI import Ui_Timer
 import datetime
-import ConfigParser
+import json
 import os
+
+from ui.timerUI import Ui_Timer
+
+# Keys must be in sorted order: long(min,msg), short(min,msg), tip
+DEFAULTS = {
+    "long_min": 50,
+    "long_msg": "Sit Down!",
+    "short_min": 10,
+    "short_msg": "Stand Up!",
+    "tool_tip": "Stand/Sit Timer",
+}
+
+ICONS = (
+    "res/sit2.png",
+    "res/sit1.png",
+    "res/stand1.png",
+    "res/stand2.png",
+    "res/paused.png",
+)
+
+POLL_SEC = 2.5
+
 
 class SetupUI(QtGui.QDialog):
     def __init__(self, parent):
@@ -15,27 +36,22 @@ class SetupUI(QtGui.QDialog):
 
         self.connect(self.ui.buttonBox, QtCore.SIGNAL("accepted()"), self.setTimerValues)
 
-    def setValues(self, time, msg):
-        time = str(datetime.timedelta(seconds=time/1000)).split(':')
-        hours = int(time[0])
-        minutes = int(time[1])
-        seconds = int(time[2])
-
-        self.ui.HourSpin.setValue(hours)
-        self.ui.MinuteSpin.setValue(minutes)
-        self.ui.SecondSpin.setValue(seconds)
-        self.ui.PopupEdit.setText(msg)
+    def setValues(self, config):
+        self.ui.FirstTime.setValue(config['long_min'])
+        self.ui.FirstText.setText(config['long_msg'])
+        self.ui.SecondTime.setValue(config['short_min'])
+        self.ui.SecondText.setText(config['short_msg'])
 
     def setTimerValues(self):
-        hours = self.ui.HourSpin.value()
-        minutes = self.ui.MinuteSpin.value()
-        seconds = self.ui.SecondSpin.value()
-
-        total_seconds = (hours * 60 * 60) + (minutes * 60) + seconds
-
-        msg = self.ui.PopupEdit.text()
-        self.parent.setValues(total_seconds, msg)
+        data = {
+            'long_min': self.ui.FirstTime.value(),
+            'long_msg': str(self.ui.FirstText.text()),
+            'short_min': self.ui.SecondTime.value(),
+            'short_msg': str(self.ui.SecondText.text())
+        }
+        self.parent.setValues(**data)
         self.hide()
+
 
 class SystemTrayIcon(QtGui.QSystemTrayIcon):
 
@@ -44,19 +60,25 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
         self.parent = parent
         menu = QtGui.QMenu(parent)
 
-        startAction = menu.addAction("Start")
-        self.connect(startAction, QtCore.SIGNAL("triggered()"), self.startTimer)
+        startAction = menu.addAction("Start Long")
+        self.connect(startAction, QtCore.SIGNAL("triggered()"), self.startTimerLong)
         self.setContextMenu(menu)
 
-        startAction = menu.addAction("Stop")
+        startAction = menu.addAction("Start Short")
+        self.connect(startAction, QtCore.SIGNAL("triggered()"), self.startTimerShort)
+        self.setContextMenu(menu)
+
+        menu.addSeparator()
+
+        startAction = menu.addAction("Pause")
         self.connect(startAction, QtCore.SIGNAL("triggered()"), self.stopTimer)
         self.setContextMenu(menu)
+
+        menu.addSeparator()
 
         startAction = menu.addAction("Setup")
         self.connect(startAction, QtCore.SIGNAL("triggered()"), self.setup)
         self.setContextMenu(menu)
-
-        menu.addSeparator()
 
         exitAction = menu.addAction("Exit")
         self.connect(exitAction, QtCore.SIGNAL("triggered()"), self.exit)
@@ -69,99 +91,122 @@ class SystemTrayIcon(QtGui.QSystemTrayIcon):
         self.connect(self.timer, QtCore.SIGNAL("timeout()"), self.endTimer)
         self.timerID = None
 
-        self.onIcon = QtGui.QIcon("res/TimerOn.png")
-        self.offIcon = QtGui.QIcon("res/TimerOff.png")
-
+        self.allIcons = [QtGui.QIcon(name) for name in ICONS]
         self.loadConfig()
 
+    def getText(self, key):
+        return self.config.get(key, DEFAULTS[key])
+
+    def getTime(self, key):
+        return float(self.get(key))
+
     def loadConfig(self):
-        self.useConfig = True
-        configPath = os.path.expanduser(os.path.join("~", ".config", "easytimer"))
-        if not os.path.exists(configPath):
+        configFile = os.path.expanduser(os.path.join("~", ".config", "easytimer.conf"))
+        if not os.path.exists(configFile):
             try:
-                os.makedirs(configPath)
+                os.makedirs(os.path.dirname(configFile))
             except:
                 self.useConfig = False
                 return
-
-        self.configFile = os.path.join(configPath, "conf")
-
-        self.config = ConfigParser.ConfigParser()
-        opened_files = self.config.read(self.configFile)
-        if len(opened_files) == 0:
-            self.config.add_section("main")
-            try:
-                f = open(self.configFile, 'w+')
-                f.close()
-            except:
-                self.useConfig = False
-                pass
-        else:
-            try:
-                self.setValues(self.config.getint("main", "seconds"), self.config.get("main", "msg"))
-            except ConfigParser.NoSectionError:
-                self.config.add_section("main")
+        try:
+            with open(configFile) as fd:
+                self.config = json.load(fd, encoding='utf-8')
+            # Extend the config
+            for key, value in DEFAULTS.items():
+                if not key in self.config:
+                    self.config[key] = value
+        except:
+            self.config = dict(DEFAULTS)
+            
+        self.useConfig = True
+        self.configFile = configFile
+        self.setValues(**self.config)
 
     def exit(self):
         sys.exit(0)
 
     def error(self, msg):
-         QtGui.QMessageBox.warning(None,
-                    "Error",
-                    (msg),
-                    QtGui.QMessageBox.Ok)
+        QtGui.QMessageBox.warning(None, "Error", (msg),
+                                  QtGui.QMessageBox.Ok)
+        
+    def startTimerLong(self):
+        print("Starting LONG timer...")
+        self.startTimer(short=False)
 
-    def startTimer(self):
-        if self.timeout < 1:
-            QtGui.QMessageBox.information(None,
-                    "Timeless",
-                    ("Timeout is less than 1 second. Can't have that"),
-                    QtGui.QMessageBox.Ok)
-            return
-        if self.timer.isActive() is False:
-            self.timerID = self.timer.start(self.timeout)
-            self.setIcon(self.onIcon)
+    def startTimerShort(self):
+        print("Starting SHORT timer...")
+        self.startTimer(short=True)
+
+    def startTimer(self, short):
+        ind = 2 if short else 0
+        self.short = short
+        self.timeout = self.values[ind] * 60
+        self.msg = self.values[ind + 1]
+        self.alt = self.values[3 - ind]
+
+        assert self.timeout >= 60.0, \
+            ("A timeout of less than 1 minute (%s sec) is invalid." % self.timeout)
+
+        self.icons = self.allIcons[ind:ind+2]
+        self.setIcon(self.icons[0])
+        self.toggles = 8
+
+        msg = "You should: %s\nFor: %s minutes" % (
+            self.msg, self.timeout / 60.0)
+        QtGui.QMessageBox.information(
+            None, "Stand/Sit Timer", msg, QtGui.QMessageBox.Ok)
+
+        if not self.timer.isActive():
+            self.timerID = self.timer.start(POLL_SEC * 1000)
 
     def stopTimer(self):
-        if self.timer is not None:
+        if self.timer:
             self.timer.stop()
-            self.setIcon(self.offIcon)
+        self.setIcon(self.allIcons[-1])
+        print("Stopped...")
 
     def endTimer(self):
-        confirm = QtGui.QMessageBox.information(None,
-                    "Time's up!",
-                    (self.msg + "\nOK to restart. Cancel to close this dialog"),
-                    QtGui.QMessageBox.Ok | QtGui.QMessageBox.Cancel)
-        if confirm == QtGui.QMessageBox.Ok:
-            self.startTimer()
-        else:
-            self.stopTimer()
+        try:
+            print("Time left: %s (to %s) ..." % (self.timeout, self.msg))
+            self.timeout -= POLL_SEC
+            if self.toggles:
+                ind = self.toggles % 2
+                self.toggles -= 1
+                icon = self.icons[ind]
+                self.setIcon(icon)
+                return
+            if self.timeout > 0:
+                return
+
+            self.startTimer(not self.short)
+
+        except Exception as exc:
+            QtGui.QMessageBox.information(
+                None, "Failed", str(exc), QtGui.QMessageBox.Ok)
+            raise
 
     def setup(self):
         if self.setupDialog is None:
-            self.setupDialog = SetupUI(self)
+            self.setupDialog = SetupUI( self)
 
-        self.setupDialog.setValues(self.timeout, self.msg)
+        self.setupDialog.setValues(self.config)
         self.setupDialog.show()
         self.setupDialog.raise_()
 
-    def setValues(self, seconds, msg):
-        self.timeout = seconds * 1000
-        self.msg = msg
-        self.setToolTip(msg)
-
+    def setValues(self, **config):
+        self.config = config
         if self.useConfig:
-            self.config.set("main", "seconds", seconds)
-            self.config.set("main", "msg", msg)
+            with open(self.configFile, 'w') as fd:
+                json.dump(self.config, fd, indent=4)
+        self.values = [val for key, val in sorted(config.items())]
+        print("Values: " + ", ".join(("[%s](%s)" % (e.__class__.__name__, e) for e in self.values)))
 
-            with open(self.configFile, 'wb') as config_fh:
-                self.config.write(config_fh)
 
 def main():
     app = QtGui.QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     w = QtGui.QWidget()
-    trayIcon = SystemTrayIcon(QtGui.QIcon("res/TimerOff.png"), w)
+    trayIcon = SystemTrayIcon(QtGui.QIcon(ICONS[-1]), w)
 
     trayIcon.show()
     sys.exit(app.exec_())
@@ -169,3 +214,6 @@ def main():
 if __name__ == '__main__':
     main()
 
+
+
+    
