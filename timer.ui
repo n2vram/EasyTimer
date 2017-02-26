@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>391</width>
-    <height>172</height>
+    <width>401</width>
+    <height>235</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>110</x>
-     <y>140</y>
+     <y>200</y>
      <width>176</width>
      <height>27</height>
     </rect>
@@ -38,10 +38,26 @@
      <x>10</x>
      <y>10</y>
      <width>371</width>
-     <height>124</height>
+     <height>188</height>
     </rect>
    </property>
-   <layout class="QGridLayout" name="gridLayout">
+   <layout class="QFormLayout" name="formLayout">
+    <item row="0" column="0">
+     <widget class="QLabel" name="FirstTimeLabel">
+      <property name="font">
+       <font>
+        <family>Droid Sans [MONO]</family>
+        <pointsize>8</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Sitting Time (minutes)</string>
+      </property>
+      <property name="buddy">
+       <cstring>FirstTime</cstring>
+      </property>
+     </widget>
+    </item>
     <item row="0" column="1">
      <widget class="QSpinBox" name="FirstTime">
       <property name="layoutDirection">
@@ -77,8 +93,15 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="0">
-     <widget class="QLabel" name="SecondTimeLabel">
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="FirstText">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="SecondSoundLabel">
       <property name="font">
        <font>
         <family>Droid Sans [MONO]</family>
@@ -86,15 +109,61 @@
        </font>
       </property>
       <property name="text">
-       <string>Standing Text</string>
+       <string>Sitting Sound File</string>
       </property>
       <property name="buddy">
        <cstring>FirstText</cstring>
       </property>
      </widget>
     </item>
-    <item row="0" column="0">
-     <widget class="QLabel" name="FirstTimeLabel">
+    <item row="2" column="1">
+     <widget class="QGroupBox" name="StandingBox">
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QLineEdit" name="StandingFile">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>161</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="StandingFileBtn">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>0</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="StandingPlayBtn">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>0</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>▶</string>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="SecondTextLabel">
       <property name="font">
        <font>
         <family>Droid Sans [MONO]</family>
@@ -102,14 +171,14 @@
        </font>
       </property>
       <property name="text">
-       <string>Sitting Time (minutes)</string>
+       <string>Standing Time (minutes)</string>
       </property>
       <property name="buddy">
        <cstring>FirstTime</cstring>
       </property>
      </widget>
     </item>
-    <item row="2" column="1">
+    <item row="3" column="1">
      <widget class="QSpinBox" name="SecondTime">
       <property name="layoutDirection">
        <enum>Qt::LeftToRight</enum>
@@ -128,15 +197,8 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="1">
-     <widget class="QLineEdit" name="SecondText">
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="SecondTextLabel">
+    <item row="4" column="0">
+     <widget class="QLabel" name="SecondTimeLabel">
       <property name="font">
        <font>
         <family>Droid Sans [MONO]</family>
@@ -144,18 +206,80 @@
        </font>
       </property>
       <property name="text">
-       <string>Standing Time (minutes)</string>
+       <string>Standing Text</string>
       </property>
       <property name="buddy">
-       <cstring>FirstTime</cstring>
+       <cstring>FirstText</cstring>
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="FirstText">
+    <item row="4" column="1">
+     <widget class="QLineEdit" name="SecondText">
       <property name="text">
        <string/>
       </property>
+     </widget>
+    </item>
+    <item row="5" column="0">
+     <widget class="QLabel" name="FirstSoundLabel">
+      <property name="font">
+       <font>
+        <family>Droid Sans [MONO]</family>
+        <pointsize>8</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Sitting Sound File</string>
+      </property>
+      <property name="buddy">
+       <cstring>FirstText</cstring>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="1">
+     <widget class="QGroupBox" name="SittingBox">
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QLineEdit" name="SittingFile">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>161</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="SittingFileBtn">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>0</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="SittingPlayBtn">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>0</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>▶</string>
+       </property>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -164,8 +288,12 @@
  <tabstops>
   <tabstop>FirstTime</tabstop>
   <tabstop>FirstText</tabstop>
+  <tabstop>StandingFile</tabstop>
+  <tabstop>StandingFileBtn</tabstop>
   <tabstop>SecondTime</tabstop>
   <tabstop>SecondText</tabstop>
+  <tabstop>SittingFile</tabstop>
+  <tabstop>SittingFileBtn</tabstop>
  </tabstops>
  <resources/>
  <connections>
